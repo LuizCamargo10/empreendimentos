@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Empreendimentos</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..." />
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+
+    body { display:flex; background:#f4f6f8; height:100vh; }
+
+    .sidebar {
+      width:320px;
+      background:#111827;
+      color:white;
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow-y:auto;
+    }
+
+    .sidebar h2 { font-size:18px; margin-bottom:10px; }
+
+    input, button {
+      padding:10px;
+      border-radius:10px;
+      border:none;
+      font-size:14px;
+    }
+
+    input { background:#1f2937; color:white; }
+
+    button { cursor:pointer; font-weight:600; }
+
+    .add { background:#10b981; color:white; }
+    .share { background:#6366f1; color:white; }
+
+    .tipos { display:flex; flex-wrap:wrap; gap:6px; }
+
+    .chip {
+      background:#374151;
+      padding:6px 8px;
+      border-radius:8px;
+      font-size:12px;
+      cursor:pointer;
+    }
+
+    .main { flex:1; padding:24px; overflow-y:auto; }
+
+    h1 { margin-bottom:20px; color:#111827; }
+
+    .filtro { margin-bottom:12px; padding:10px; width:260px; }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:20px;
+    }
+
+    .card {
+      background:white;
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 10px 24px rgba(0,0,0,0.08);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .title { font-weight:600; font-size:16px; }
+
+    .city { font-size:13px; color:#6b7280; }
+
+    .empresa { font-size:13px; color:#374151; font-weight:500; }
+
+    .preco { font-size:14px; font-weight:600; color:#059669; }
+
+    .tags { display:flex; flex-wrap:wrap; gap:6px; }
+
+    .tag {
+      background:#e0e7ff;
+      color:#3730a3;
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:8px;
+    }
+
+    .files a {
+      display:block;
+      font-size:12px;
+      color:#2563eb;
+      text-decoration:none;
+    }
+
+    .actions { display:flex; gap:8px; margin-top:auto; }
+
+    .delete { background:#fee2e2; color:#991b1b; }
+
+    .map { background:#dbeafe; }
+
+    .edit { background:#e5e7eb; }
+  </style>
+</head>
+
+<body>
+
+  <div class="sidebar">
+    <h2>Novo Empreendimento</h2>
+
+    <input id="nome" placeholder="Nome" />
+    <input id="empresa" placeholder="Empresa" />
+    <input id="cidade" placeholder="Cidade" />
+    
+    <input id="vagas" placeholder="Vagas/unidade" />
+    <input id="percentual" placeholder="% vagas" />
+    <input id="local" placeholder="Endereço para mapa" />
+
+    <input id="quartos" placeholder="Quartos" />
+    <input id="metragem" placeholder="Metragem m²" />
+    <input id="precoTipo" placeholder="Valor médio da tipologia (R$)" />
+    <button type="button" onclick="addTipo()">Adicionar tipologia</button>
+
+    <div class="tipos" id="tipos"></div>
+
+    <input id="arquivos" type="file" multiple />
+
+    <button class="add" onclick="salvar()">Salvar</button>
+    <button class="share" onclick="gerarLink()">Gerar link compartilhável</button>
+  </div>
+
+  <div class="main">
+    <h1>Empreendimentos</h1>
+
+    <input class="filtro" id="filtroEmpresa" placeholder="Filtrar por empresa..." oninput="render()" />
+
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const filtroEmpresa = document.getElementById('filtroEmpresa');
+
+    let dados = JSON.parse(localStorage.getItem('emp')) || [];
+    let tipologias = [];
+    let editIndex = null;
+
+    function addTipo() {
+      const q = document.getElementById('quartos').value;
+      const m = document.getElementById('metragem').value;
+      const p = document.getElementById('precoTipo').value;
+      if (!q || !m || !p) return;
+
+      tipologias.push({ q, m, p });
+      document.getElementById('quartos').value = '';
+      document.getElementById('metragem').value = '';
+      document.getElementById('precoTipo').value = '';
+      renderTipos();
+    }
+
+    function renderTipos() {
+      const tiposDiv = document.getElementById('tipos');
+      tiposDiv.innerHTML = '';
+      tipologias.forEach((t, i) => {
+        const c = document.createElement('div');
+        c.className = 'chip';
+        c.innerText = `${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}`;
+        c.onclick = () => { tipologias.splice(i,1); renderTipos(); };
+        tiposDiv.appendChild(c);
+      });
+    }
+
+    async function salvar() {
+      const filesInput = document.getElementById('arquivos');
+
+      const files = await Promise.all(
+        Array.from(filesInput.files).map(f => new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = () => res({ nome: f.name, url: reader.result });
+          reader.readAsDataURL(f);
+        }))
+      );
+
+      const obj = {
+        nome: document.getElementById('nome').value,
+        empresa: document.getElementById('empresa').value,
+        cidade: document.getElementById('cidade').value,
+        vagas: document.getElementById('vagas').value,
+        percentual: document.getElementById('percentual').value,
+        local: document.getElementById('local').value,
+        tipologias: [...tipologias],
+        files
+      };
+
+      if (editIndex !== null) {
+        dados[editIndex] = obj;
+        editIndex = null;
+      } else {
+        dados.push(obj);
+      }
+
+      localStorage.setItem('emp', JSON.stringify(dados));
+      location.reload();
+    }
+
+    function abrirMapa(end) {
+      window.open(`https://www.google.com/maps?q=${encodeURIComponent(end)}`,'_blank');
+    }
+
+    function editar(i) {
+      const e = dados[i];
+
+      document.getElementById('nome').value = e.nome || '';
+      document.getElementById('empresa').value = e.empresa || '';
+      document.getElementById('cidade').value = e.cidade || '';
+      
+      document.getElementById('vagas').value = e.vagas || '';
+      document.getElementById('percentual').value = e.percentual || '';
+      document.getElementById('local').value = e.local || '';
+
+      tipologias = e.tipologias ? [...e.tipologias] : [];
+      renderTipos();
+
+      editIndex = i;
+    }
+
+    function gerarLink() {
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
+      const html = `<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Empreendimentos</title></head><body><script>localStorage.setItem('emp', decodeURIComponent(escape(atob('${data}')))); location.href = location.origin + location.pathname;<\/script></body></html>`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
+
+    function carregarLink() {
+      const params = new URLSearchParams(location.search);
+      const data = params.get('data');
+      if (data) {
+        dados = JSON.parse(decodeURIComponent(escape(atob(data))));
+        localStorage.setItem('emp', JSON.stringify(dados));
+      }
+    }
+
+    function render() {
+      grid.innerHTML = '';
+      const filtro = (filtroEmpresa.value || '').toLowerCase();
+
+      dados
+        .filter(e => (e.empresa || '').toLowerCase().includes(filtro))
+        .forEach((e, i) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          card.innerHTML = `
+            <div class="title">${e.nome || ''}</div>
+            <div class="empresa">${e.empresa || ''}</div>
+            <div class="city">${e.cidade || ''}</div>
+            
+            <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
+
+            <div class="tags">
+              ${(e.tipologias || []).map(t => `<span class='tag'>${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}</span>`).join('')}
+            </div>
+
+            <div class="files">
+              ${(e.files || []).map(f => `<a href="${f.url}" target="_blank" download>📎 ${f.nome}</a>`).join('')}
+            </div>
+
+            <div class="actions">
+              <button class="map" onclick="abrirMapa('${e.local || ''}')">Mapa</button>
+              <button class="edit" onclick="editar(${i})">Editar</button>
+              <button class="delete" onclick="remover(${i})">Excluir</button>
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+    }
+
+    function remover(i){
+      dados.splice(i,1);
+      localStorage.setItem('emp', JSON.stringify(dados));
+      render();
+    }
+
+    carregarLink();
+    render();
+  </script>
+
+</body>
+</html>
