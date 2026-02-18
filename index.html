@@ -139,33 +139,39 @@
     <div class="grid" id="grid"></div>
   </div>
 
- <script>
+ <script type="module">
 
-const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxMk6ZuPw_m1-0t9TgmmLAn0GVbA2Cq3a10MjN92fez21XsMoXLiqXk_sp4D1TK3kKS/exec";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "SUA_URL_SUPABASE",
+  "SUA_CHAVE_ANON"
+);
 
 const grid = document.getElementById('grid');
 const filtroEmpresa = document.getElementById('filtroEmpresa');
-
-const API_URL = "https://script.google.com/macros/s/AKfycbxMk6ZuPw_m1-0t9TgmmLAn0GVbA2Cq3a10MjN92fez21XsMoXLiqXk_sp4D1TK3kKS/exec";
 
 let dados = [];
 let tipologias = [];
 
 async function carregarDados() {
-  try {
-    const res = await fetch(URL_SCRIPT);
-    const json = await res.json();
+  const { data, error } = await supabase
+    .from("empreendimentos")
+    .select("*")
+    .order("id", { ascending: false });
 
-    dados = json.map(e => ({
-      ...e,
-      tipologias: e.tipologias ? JSON.parse(e.tipologias) : [],
-      files: e.files ? JSON.parse(e.files) : []
-    }));
-
-    render();
-  } catch (err) {
-    console.error("Erro ao carregar dados:", err);
+  if (error) {
+    console.error("Erro ao carregar:", error);
+    return;
   }
+
+  dados = data.map(e => ({
+    ...e,
+    tipologias: e.tipologias ? JSON.parse(e.tipologias) : [],
+    files: e.files ? JSON.parse(e.files) : []
+  }));
+
+  render();
 }
 
 function addTipo() {
@@ -222,17 +228,18 @@ async function salvar() {
     files: JSON.stringify(files)
   };
 
-  try {
-    await fetch(URL_SCRIPT, {
-      method: "POST",
-      body: JSON.stringify(obj)
-    });
+  const { error } = await supabase
+    .from("empreendimentos")
+    .insert([obj]);
 
-    alert("Salvo com sucesso na planilha!");
-    location.reload();
-  } catch (err) {
-    console.error("Erro ao salvar:", err);
+  if (error) {
+    console.error("Erro ao salvar:", error);
+    alert("Erro ao salvar");
+    return;
   }
+
+  alert("Salvo com sucesso!");
+  location.reload();
 }
 
 function abrirMapa(end) {
