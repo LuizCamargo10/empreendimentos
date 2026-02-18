@@ -139,155 +139,146 @@
     <div class="grid" id="grid"></div>
   </div>
 
-  <script>
-    const grid = document.getElementById('grid');
-    const filtroEmpresa = document.getElementById('filtroEmpresa');
+ <script>
 
-    let dados = JSON.parse(localStorage.getItem('emp')) || [];
-    let tipologias = [];
-    let editIndex = null;
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxMk6ZuPw_m1-0t9TgmmLAn0GVbA2Cq3a10MjN92fez21XsMoXLiqXk_sp4D1TK3kKS/exec";
 
-    function addTipo() {
-      const q = document.getElementById('quartos').value;
-      const m = document.getElementById('metragem').value;
-      const p = document.getElementById('precoTipo').value;
-      if (!q || !m || !p) return;
+const grid = document.getElementById('grid');
+const filtroEmpresa = document.getElementById('filtroEmpresa');
 
-      tipologias.push({ q, m, p });
-      document.getElementById('quartos').value = '';
-      document.getElementById('metragem').value = '';
-      document.getElementById('precoTipo').value = '';
-      renderTipos();
-    }
+let dados = [];
+let tipologias = [];
 
-    function renderTipos() {
-      const tiposDiv = document.getElementById('tipos');
-      tiposDiv.innerHTML = '';
-      tipologias.forEach((t, i) => {
-        const c = document.createElement('div');
-        c.className = 'chip';
-        c.innerText = `${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}`;
-        c.onclick = () => { tipologias.splice(i,1); renderTipos(); };
-        tiposDiv.appendChild(c);
-      });
-    }
+async function carregarDados() {
+  try {
+    const res = await fetch(URL_SCRIPT);
+    const json = await res.json();
 
-    async function salvar() {
-      const filesInput = document.getElementById('arquivos');
+    dados = json.map(e => ({
+      ...e,
+      tipologias: e.tipologias ? JSON.parse(e.tipologias) : [],
+      files: e.files ? JSON.parse(e.files) : []
+    }));
 
-      const files = await Promise.all(
-        Array.from(filesInput.files).map(f => new Promise(res => {
-          const reader = new FileReader();
-          reader.onload = () => res({ nome: f.name, url: reader.result });
-          reader.readAsDataURL(f);
-        }))
-      );
-
-      const obj = {
-        nome: document.getElementById('nome').value,
-        empresa: document.getElementById('empresa').value,
-        cidade: document.getElementById('cidade').value,
-        vagas: document.getElementById('vagas').value,
-        percentual: document.getElementById('percentual').value,
-        local: document.getElementById('local').value,
-        tipologias: [...tipologias],
-        files
-      };
-
-      if (editIndex !== null) {
-        dados[editIndex] = obj;
-        editIndex = null;
-      } else {
-        dados.push(obj);
-      }
-
-      localStorage.setItem('emp', JSON.stringify(dados));
-      location.reload();
-    }
-
-    function abrirMapa(end) {
-      window.open(`https://www.google.com/maps?q=${encodeURIComponent(end)}`,'_blank');
-    }
-
-    function editar(i) {
-      const e = dados[i];
-
-      document.getElementById('nome').value = e.nome || '';
-      document.getElementById('empresa').value = e.empresa || '';
-      document.getElementById('cidade').value = e.cidade || '';
-      
-      document.getElementById('vagas').value = e.vagas || '';
-      document.getElementById('percentual').value = e.percentual || '';
-      document.getElementById('local').value = e.local || '';
-
-      tipologias = e.tipologias ? [...e.tipologias] : [];
-      renderTipos();
-
-      editIndex = i;
-    }
-
-    function gerarLink() {
-      const data = btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
-      const html = `<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Empreendimentos</title></head><body><script>localStorage.setItem('emp', decodeURIComponent(escape(atob('${data}')))); location.href = location.origin + location.pathname;<\/script></body></html>`;
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    }
-
-    function carregarLink() {
-      const params = new URLSearchParams(location.search);
-      const data = params.get('data');
-      if (data) {
-        dados = JSON.parse(decodeURIComponent(escape(atob(data))));
-        localStorage.setItem('emp', JSON.stringify(dados));
-      }
-    }
-
-    function render() {
-      grid.innerHTML = '';
-      const filtro = (filtroEmpresa.value || '').toLowerCase();
-
-      dados
-        .filter(e => (e.empresa || '').toLowerCase().includes(filtro))
-        .forEach((e, i) => {
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          card.innerHTML = `
-            <div class="title">${e.nome || ''}</div>
-            <div class="empresa">${e.empresa || ''}</div>
-            <div class="city">${e.cidade || ''}</div>
-            
-            <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
-
-            <div class="tags">
-              ${(e.tipologias || []).map(t => `<span class='tag'>${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}</span>`).join('')}
-            </div>
-
-            <div class="files">
-              ${(e.files || []).map(f => `<a href="${f.url}" target="_blank" download>📎 ${f.nome}</a>`).join('')}
-            </div>
-
-            <div class="actions">
-              <button class="map" onclick="abrirMapa('${e.local || ''}')">Mapa</button>
-              <button class="edit" onclick="editar(${i})">Editar</button>
-              <button class="delete" onclick="remover(${i})">Excluir</button>
-            </div>
-          `;
-
-          grid.appendChild(card);
-        });
-    }
-
-    function remover(i){
-      dados.splice(i,1);
-      localStorage.setItem('emp', JSON.stringify(dados));
-      render();
-    }
-
-    carregarLink();
     render();
-  </script>
+  } catch (err) {
+    console.error("Erro ao carregar dados:", err);
+  }
+}
+
+function addTipo() {
+  const q = document.getElementById('quartos').value;
+  const m = document.getElementById('metragem').value;
+  const p = document.getElementById('precoTipo').value;
+  if (!q || !m || !p) return;
+
+  tipologias.push({ q, m, p });
+
+  document.getElementById('quartos').value = '';
+  document.getElementById('metragem').value = '';
+  document.getElementById('precoTipo').value = '';
+
+  renderTipos();
+}
+
+function renderTipos() {
+  const tiposDiv = document.getElementById('tipos');
+  tiposDiv.innerHTML = '';
+
+  tipologias.forEach((t, i) => {
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.innerText = `${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}`;
+    c.onclick = () => {
+      tipologias.splice(i,1);
+      renderTipos();
+    };
+    tiposDiv.appendChild(c);
+  });
+}
+
+async function salvar() {
+
+  const filesInput = document.getElementById('arquivos');
+
+  const files = await Promise.all(
+    Array.from(filesInput.files).map(f => new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = () => res({ nome: f.name, url: reader.result });
+      reader.readAsDataURL(f);
+    }))
+  );
+
+  const obj = {
+    nome: document.getElementById('nome').value,
+    empresa: document.getElementById('empresa').value,
+    cidade: document.getElementById('cidade').value,
+    vagas: document.getElementById('vagas').value,
+    percentual: document.getElementById('percentual').value,
+    local: document.getElementById('local').value,
+    tipologias: JSON.stringify(tipologias),
+    files: JSON.stringify(files)
+  };
+
+  try {
+    await fetch(URL_SCRIPT, {
+      method: "POST",
+      body: JSON.stringify(obj)
+    });
+
+    alert("Salvo com sucesso na planilha!");
+    location.reload();
+  } catch (err) {
+    console.error("Erro ao salvar:", err);
+  }
+}
+
+function abrirMapa(end) {
+  window.open(`https://www.google.com/maps?q=${encodeURIComponent(end)}`,'_blank');
+}
+
+function render() {
+  grid.innerHTML = '';
+  const filtro = (filtroEmpresa.value || '').toLowerCase();
+
+  dados
+    .filter(e => (e.empresa || '').toLowerCase().includes(filtro))
+    .forEach((e) => {
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      card.innerHTML = `
+        <div class="title">${e.nome || ''}</div>
+        <div class="empresa">${e.empresa || ''}</div>
+        <div class="city">${e.cidade || ''}</div>
+        
+        <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
+
+        <div class="tags">
+          ${(e.tipologias || []).map(t =>
+            `<span class='tag'>${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}</span>`
+          ).join('')}
+        </div>
+
+        <div class="files">
+          ${(e.files || []).map(f =>
+            `<a href="${f.url}" target="_blank" download>📎 ${f.nome}</a>`
+          ).join('')}
+        </div>
+
+        <div class="actions">
+          <button class="map" onclick="abrirMapa('${e.local || ''}')">Mapa</button>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+}
+
+carregarDados();
+
+</script>
 
 </body>
 </html>
