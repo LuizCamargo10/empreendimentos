@@ -8,7 +8,6 @@
 
   <style>
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
-
     body { display:flex; background:#f4f6f8; height:100vh; }
 
     .sidebar {
@@ -32,7 +31,6 @@
     }
 
     input { background:#1f2937; color:white; }
-
     button { cursor:pointer; font-weight:600; }
 
     .add { background:#10b981; color:white; }
@@ -71,13 +69,8 @@
     }
 
     .title { font-weight:600; font-size:16px; }
-
     .city { font-size:13px; color:#6b7280; }
-
     .empresa { font-size:13px; color:#374151; font-weight:500; }
-
-    .preco { font-size:14px; font-weight:600; color:#059669; }
-
     .tags { display:flex; flex-wrap:wrap; gap:6px; }
 
     .tag {
@@ -96,57 +89,48 @@
     }
 
     .actions { display:flex; gap:8px; margin-top:auto; }
-
-    .delete { background:#fee2e2; color:#991b1b; }
-
     .map { background:#dbeafe; }
-
-    .edit { background:#e5e7eb; }
   </style>
 </head>
 
 <body>
 
-  <div class="sidebar">
-    <h2>Novo Empreendimento</h2>
+<div class="sidebar">
+  <h2>Novo Empreendimento</h2>
 
-    <input id="nome" placeholder="Nome" />
-    <input id="empresa" placeholder="Empresa" />
-    <input id="cidade" placeholder="Cidade" />
-    
-    <input id="vagas" placeholder="Vagas/unidade" />
-    <input id="percentual" placeholder="% vagas" />
-    <input id="local" placeholder="Endereço para mapa" />
+  <input id="nome" placeholder="Nome" />
+  <input id="empresa" placeholder="Empresa" />
+  <input id="cidade" placeholder="Cidade" />
 
-    <input id="quartos" placeholder="Quartos" />
-    <input id="metragem" placeholder="Metragem m²" />
-    <input id="precoTipo" placeholder="Valor médio da tipologia (R$)" />
-    <button type="button" onclick="addTipo()">Adicionar tipologia</button>
+  <input id="vagas" placeholder="Vagas/unidade" />
+  <input id="percentual" placeholder="% vagas" />
+  <input id="local" placeholder="Endereço para mapa" />
 
-    <div class="tipos" id="tipos"></div>
+  <input id="quartos" placeholder="Quartos" />
+  <input id="metragem" placeholder="Metragem m²" />
+  <input id="precoTipo" placeholder="Valor médio da tipologia (R$)" />
+  <button type="button" onclick="addTipo()">Adicionar tipologia</button>
 
-    <input id="arquivos" type="file" multiple />
+  <div class="tipos" id="tipos"></div>
 
-    <button class="add" onclick="salvar()">Salvar</button>
-    <button class="share" onclick="gerarLink()">Gerar link compartilhável</button>
-  </div>
+  <input id="arquivos" type="file" multiple />
 
-  <div class="main">
-    <h1>Empreendimentos</h1>
+  <button class="add" onclick="salvar()">Salvar</button>
+</div>
 
-    <input class="filtro" id="filtroEmpresa" placeholder="Filtrar por empresa..." oninput="render()" />
+<div class="main">
+  <h1>Empreendimentos</h1>
+  <input class="filtro" id="filtroEmpresa" placeholder="Filtrar por empresa..." oninput="render()" />
+  <div class="grid" id="grid"></div>
+</div>
 
-    <div class="grid" id="grid"></div>
-  </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
- <script type="module">
+<script>
+const SUPABASE_URL = "https://supabase.com/dashboard/project/dtveouwomzbhvyvfudti/editor/17450";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0dmVvdXdvbXpiaHZ5dmZ1ZHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NTQzMDgsImV4cCI6MjA4NzAzMDMwOH0.HkvsqvCEb3qxnGUo78qJ29_qz5NrVe5d2B-GMVxoxDU";
 
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-const supabase = createClient(
-  "sb_publishable_qBYWwgX2bUIFRI65rDYdig_2PF2Xr_9",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0dmVvdXdvbXpiaHZ5dmZ1ZHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NTQzMDgsImV4cCI6MjA4NzAzMDMwOH0.HkvsqvCEb3qxnGUo78qJ29_qz5NrVe5d2B-GMVxoxDU"
-);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const grid = document.getElementById('grid');
 const filtroEmpresa = document.getElementById('filtroEmpresa');
@@ -155,10 +139,7 @@ let dados = [];
 let tipologias = [];
 
 async function carregarDados() {
-  const { data, error } = await supabase
-    .from("empreendimentos")
-    .select("*")
-    .order("id", { ascending: false });
+  const { data, error } = await supabase.from("empreendimentos").select("*");
 
   if (error) {
     console.error("Erro ao carregar:", error);
@@ -206,7 +187,6 @@ function renderTipos() {
 }
 
 async function salvar() {
-
   const filesInput = document.getElementById('arquivos');
 
   const files = await Promise.all(
@@ -228,18 +208,21 @@ async function salvar() {
     files: JSON.stringify(files)
   };
 
-  const { error } = await supabase
-    .from("empreendimentos")
-    .insert([obj]);
+  const { error } = await supabase.from("empreendimentos").insert([obj]);
 
   if (error) {
     console.error("Erro ao salvar:", error);
-    alert("Erro ao salvar");
+    alert("Erro ao salvar no banco.");
     return;
   }
 
-  alert("Salvo com sucesso!");
-  location.reload();
+  await carregarDados();
+
+  tipologias = [];
+  renderTipos();
+  document.querySelectorAll(".sidebar input").forEach(i => {
+    if (i.type !== "file") i.value = "";
+  });
 }
 
 function abrirMapa(end) {
@@ -261,7 +244,7 @@ function render() {
         <div class="title">${e.nome || ''}</div>
         <div class="empresa">${e.empresa || ''}</div>
         <div class="city">${e.cidade || ''}</div>
-        
+
         <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
 
         <div class="tags">
@@ -286,7 +269,6 @@ function render() {
 }
 
 carregarDados();
-
 </script>
 
 </body>
