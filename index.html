@@ -237,6 +237,22 @@
       });
     }
 
+    function limparFormulario() {
+      document.getElementById('nome').value = '';
+      document.getElementById('empresa').value = '';
+      document.getElementById('cidade').value = '';
+      document.getElementById('percentual').value = '';
+      document.getElementById('local').value = '';
+      document.getElementById('quartos').value = '';
+      document.getElementById('metragem').value = '';
+      document.getElementById('precoTipo').value = '';
+      document.getElementById('imagem').value = '';
+      document.getElementById('arquivos').value = '';
+      tipologias = [];
+      renderTipos();
+      editIndex = null;
+    }
+
     async function salvar() {
       const filesInput = document.getElementById('arquivos');
       const imagemInput = document.getElementById('imagem');
@@ -276,7 +292,10 @@
       }
 
       localStorage.setItem('emp', JSON.stringify(dados));
-      location.reload();
+      limparFiltros();
+      limparFormulario();
+      render();
+      alert('Empreendimento salvo com sucesso!');
     }
 
     function abrirMapa(end) {
