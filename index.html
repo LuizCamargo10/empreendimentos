@@ -148,6 +148,7 @@
     <input id="empresa" placeholder="Empresa" />
     <input id="cidade" placeholder="Cidade" />
 
+    <input id="vagas" placeholder="Vagas/unidade" />
     <input id="percentual" placeholder="% vagas" />
     <input id="local" placeholder="Endereço para mapa" />
 
@@ -259,6 +260,7 @@
         nome: document.getElementById('nome').value,
         empresa: document.getElementById('empresa').value,
         cidade: document.getElementById('cidade').value,
+        vagas: document.getElementById('vagas').value,
         percentual: document.getElementById('percentual').value,
         local: document.getElementById('local').value,
         tipologias: [...tipologias],
@@ -290,6 +292,7 @@
       document.getElementById('empresa').value = e.empresa || '';
       document.getElementById('cidade').value = e.cidade || '';
 
+      document.getElementById('vagas').value = e.vagas || '';
       document.getElementById('percentual').value = e.percentual || '';
       document.getElementById('local').value = e.local || '';
 
