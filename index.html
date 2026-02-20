@@ -36,7 +36,6 @@
     button { cursor:pointer; font-weight:600; }
 
     .add { background:#10b981; color:white; }
-    .share { background:#6366f1; color:white; }
 
     .tipos { display:flex; flex-wrap:wrap; gap:6px; }
 
@@ -68,6 +67,16 @@
       display:flex;
       flex-direction:column;
       gap:10px;
+      overflow:hidden;
+    }
+
+    .card-img {
+      width:100%;
+      height:170px;
+      object-fit:cover;
+      border-radius:12px;
+      margin-bottom:4px;
+      background:#e5e7eb;
     }
 
     .title { font-weight:600; font-size:16px; }
@@ -115,7 +124,7 @@
     <input id="nome" placeholder="Nome" />
     <input id="empresa" placeholder="Empresa" />
     <input id="cidade" placeholder="Cidade" />
-    
+
     <input id="vagas" placeholder="Vagas/unidade" />
     <input id="percentual" placeholder="% vagas" />
     <input id="local" placeholder="Endereço para mapa" />
@@ -126,6 +135,9 @@
     <button type="button" onclick="addTipo()">Adicionar tipologia</button>
 
     <div class="tipos" id="tipos"></div>
+
+    <label for="imagem" style="font-size:12px;color:#d1d5db;">Imagem principal do card</label>
+    <input id="imagem" type="file" accept="image/*" />
 
     <input id="arquivos" type="file" multiple />
 
@@ -178,18 +190,31 @@
       });
     }
 
+    function lerArquivoComoDataURL(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function salvar() {
       const filesInput = document.getElementById('arquivos');
+      const imagemInput = document.getElementById('imagem');
       const agora = new Date().toISOString();
       const registroAtual = editIndex !== null ? dados[editIndex] : null;
 
       const files = await Promise.all(
-        Array.from(filesInput.files).map(f => new Promise(res => {
-          const reader = new FileReader();
-          reader.onload = () => res({ nome: f.name, url: reader.result });
-          reader.readAsDataURL(f);
+        Array.from(filesInput.files).map(async (f) => ({
+          nome: f.name,
+          url: await lerArquivoComoDataURL(f)
         }))
       );
+
+      let imagem = registroAtual?.imagem || '';
+      if (imagemInput.files[0]) {
+        imagem = await lerArquivoComoDataURL(imagemInput.files[0]);
+      }
 
       const obj = {
         nome: document.getElementById('nome').value,
@@ -200,6 +225,7 @@
         local: document.getElementById('local').value,
         tipologias: [...tipologias],
         files,
+        imagem,
         cadastradoEm: registroAtual?.cadastradoEm || agora,
         atualizadoEm: agora
       };
@@ -225,7 +251,7 @@
       document.getElementById('nome').value = e.nome || '';
       document.getElementById('empresa').value = e.empresa || '';
       document.getElementById('cidade').value = e.cidade || '';
-      
+
       document.getElementById('vagas').value = e.vagas || '';
       document.getElementById('percentual').value = e.percentual || '';
       document.getElementById('local').value = e.local || '';
@@ -234,23 +260,6 @@
       renderTipos();
 
       editIndex = i;
-    }
-
-    function gerarLink() {
-      const data = btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
-      const html = `<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Empreendimentos</title></head><body><script>localStorage.setItem('emp', decodeURIComponent(escape(atob('${data}')))); location.href = location.origin + location.pathname;<\/script></body></html>`;
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    }
-
-    function carregarLink() {
-      const params = new URLSearchParams(location.search);
-      const data = params.get('data');
-      if (data) {
-        dados = JSON.parse(decodeURIComponent(escape(atob(data))));
-        localStorage.setItem('emp', JSON.stringify(dados));
-      }
     }
 
     function render() {
@@ -264,12 +273,13 @@
           card.className = 'card';
 
           card.innerHTML = `
+            ${e.imagem ? `<img class="card-img" src="${e.imagem}" alt="Imagem de ${e.nome || 'empreendimento'}" />` : ''}
             <div class="title">${e.nome || ''}</div>
             <div class="empresa">${e.empresa || ''}</div>
             <div class="city">${e.cidade || ''}</div>
             <div class="meta">Cadastro: ${formatarDataHora(e.cadastradoEm)}</div>
             <div class="meta">Atualizado em: ${formatarDataHora(e.atualizadoEm || e.cadastradoEm)}</div>
-            
+
             <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
 
             <div class="tags">
@@ -297,7 +307,6 @@
       render();
     }
 
-    carregarLink();
     render();
   </script>
 
