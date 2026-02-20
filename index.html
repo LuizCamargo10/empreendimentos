@@ -148,7 +148,6 @@
     <input id="empresa" placeholder="Empresa" />
     <input id="cidade" placeholder="Cidade" />
 
-    <input id="vagas" placeholder="Vagas/unidade" />
     <input id="percentual" placeholder="% vagas" />
     <input id="local" placeholder="Endereço para mapa" />
 
@@ -260,7 +259,6 @@
         nome: document.getElementById('nome').value,
         empresa: document.getElementById('empresa').value,
         cidade: document.getElementById('cidade').value,
-        vagas: document.getElementById('vagas').value,
         percentual: document.getElementById('percentual').value,
         local: document.getElementById('local').value,
         tipologias: [...tipologias],
@@ -292,7 +290,6 @@
       document.getElementById('empresa').value = e.empresa || '';
       document.getElementById('cidade').value = e.cidade || '';
 
-      document.getElementById('vagas').value = e.vagas || '';
       document.getElementById('percentual').value = e.percentual || '';
       document.getElementById('local').value = e.local || '';
 
@@ -340,7 +337,7 @@
             <div class="meta">Cadastro: ${formatarDataHora(e.cadastradoEm)}</div>
             <div class="meta">Atualizado em: ${formatarDataHora(e.atualizadoEm || e.cadastradoEm)}</div>
 
-            <div>Vagas: ${e.vagas || ''} | ${e.percentual || ''}%</div>
+            <div>${e.percentual || ''}% de vagas</div>
 
             <div class="tags">
               ${(e.tipologias || []).map(t => `<span class='tag'>${t.q}Q • ${t.m}m² • R$ ${Number(t.p).toLocaleString('pt-BR')}</span>`).join('')}
