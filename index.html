@@ -51,7 +51,30 @@
 
     h1 { margin-bottom:20px; color:#111827; }
 
-    .filtro { margin-bottom:12px; padding:10px; width:260px; }
+    .filtros {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:10px;
+      margin-bottom:14px;
+      align-items:center;
+    }
+
+    .filtro {
+      padding:10px;
+      width:100%;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      background:#fff;
+      color:#111827;
+    }
+
+    .limpar {
+      background:#e5e7eb;
+      color:#111827;
+      border-radius:10px;
+      border:none;
+      padding:10px;
+    }
 
     .grid {
       display:grid;
@@ -136,10 +159,10 @@
 
     <div class="tipos" id="tipos"></div>
 
-    <label for="imagem" style="font-size:12px;color:#d1d5db;">Adicionar Imagem</label>
+    <label for="imagem" style="font-size:12px;color:#d1d5db;">Imagem principal do card</label>
     <input id="imagem" type="file" accept="image/*" />
-    
-    <label for="arquivos" style="font-size:12px;color:#d1d5db;">Adicionar arquivos:</label>
+
+    <label for="arquivos" style="font-size:12px;color:#d1d5db;">Adicionar arquivo</label>
     <input id="arquivos" type="file" multiple />
 
     <button class="add" onclick="salvar()">Salvar</button>
@@ -148,7 +171,15 @@
   <div class="main">
     <h1>Empreendimentos</h1>
 
-    <input class="filtro" id="filtroEmpresa" placeholder="Filtrar por empresa..." oninput="render()" />
+    <div class="filtros">
+      <input class="filtro" id="filtroEmpresa" placeholder="Filtrar por empresa..." oninput="render()" />
+      <input class="filtro" id="filtroCidade" placeholder="Filtrar por cidade..." oninput="render()" />
+      <input class="filtro" id="filtroNome" placeholder="Filtrar por empreendimento..." oninput="render()" />
+      <input class="filtro" id="filtroPercentualMin" placeholder="% vagas mínimo" oninput="render()" />
+      <input class="filtro" id="filtroVagasMin" placeholder="Vagas mínimas" oninput="render()" />
+      <input class="filtro" id="filtroQuartos" placeholder="Quartos (tipologia)" oninput="render()" />
+      <button class="limpar" type="button" onclick="limparFiltros()">Limpar filtros</button>
+    </div>
 
     <div class="grid" id="grid"></div>
   </div>
@@ -156,6 +187,11 @@
   <script>
     const grid = document.getElementById('grid');
     const filtroEmpresa = document.getElementById('filtroEmpresa');
+    const filtroCidade = document.getElementById('filtroCidade');
+    const filtroNome = document.getElementById('filtroNome');
+    const filtroPercentualMin = document.getElementById('filtroPercentualMin');
+    const filtroVagasMin = document.getElementById('filtroVagasMin');
+    const filtroQuartos = document.getElementById('filtroQuartos');
 
     let dados = JSON.parse(localStorage.getItem('emp')) || [];
     let tipologias = [];
@@ -164,6 +200,11 @@
     function formatarDataHora(iso) {
       if (!iso) return '';
       return new Date(iso).toLocaleString('pt-BR');
+    }
+
+    function parseNumero(valor) {
+      if (valor === undefined || valor === null) return 0;
+      return Number(String(valor).replace(',', '.')) || 0;
     }
 
     function addTipo() {
@@ -263,12 +304,35 @@
       editIndex = i;
     }
 
+    function limparFiltros() {
+      filtroEmpresa.value = '';
+      filtroCidade.value = '';
+      filtroNome.value = '';
+      filtroPercentualMin.value = '';
+      filtroVagasMin.value = '';
+      filtroQuartos.value = '';
+      render();
+    }
+
     function render() {
       grid.innerHTML = '';
-      const filtro = (filtroEmpresa.value || '').toLowerCase();
+      const empresa = (filtroEmpresa.value || '').toLowerCase();
+      const cidade = (filtroCidade.value || '').toLowerCase();
+      const nome = (filtroNome.value || '').toLowerCase();
+      const percentualMin = parseNumero(filtroPercentualMin.value);
+      const vagasMin = parseNumero(filtroVagasMin.value);
+      const quartos = (filtroQuartos.value || '').toLowerCase();
 
       dados
-        .filter(e => (e.empresa || '').toLowerCase().includes(filtro))
+        .filter(e => (e.empresa || '').toLowerCase().includes(empresa))
+        .filter(e => (e.cidade || '').toLowerCase().includes(cidade))
+        .filter(e => (e.nome || '').toLowerCase().includes(nome))
+        .filter(e => parseNumero(e.percentual) >= percentualMin)
+        .filter(e => parseNumero(e.vagas) >= vagasMin)
+        .filter(e => {
+          if (!quartos) return true;
+          return (e.tipologias || []).some(t => String(t.q || '').toLowerCase().includes(quartos));
+        })
         .forEach((e, i) => {
           const card = document.createElement('div');
           card.className = 'card';
